@@ -7,6 +7,9 @@ kind = {"♥", "♦", "♠", "♣"}
 
 deck = []
 
+rounds = 1
+score = [0,0]
+
 def hand_value(hand):
     value = 0
     ace = False
@@ -51,6 +54,8 @@ def player(window, hand, on_stand_callback):
     
     if (val == 21):
         messagebox.showinfo(title="Info message",message="You win!")
+        score[0] += 1
+        ask_new_round()
 
     buttonHit = Button(window, text="Hit", command=lambda: clickHit(hand, cards_frame, value))
     buttonStand = Button(window, text="Stand", command=lambda: clickStand(hand, on_stand_callback, buttonHit, buttonStand))
@@ -71,8 +76,12 @@ def clickHit(hand, cards_frame, value):
 
     if (val == 21):
         messagebox.showinfo(title="Info message",message="You win!")
+        score[0] += 1
+        ask_new_round()
     elif (val >= 21):
         messagebox.showinfo(title="Info message",message="You lose!")
+        score[1] += 1
+        ask_new_round()
 
 def clickStand(hand, callback, buttonHit, buttonStand):
     final_value = hand_value(hand)
@@ -116,18 +125,50 @@ def computer(window, hand, player_value):
         value.config(text=f"Value: {val}")
         
     if val > 21:
-        messagebox.showinfo(title="Info message",message="Computer lose!")  
+        messagebox.showinfo(title="Info message",message="Computer lose!") 
+        score[0] += 1  
     elif (val == 21 or val >= player_value):
         messagebox.showinfo(title="Info message",message="Computer win!")
+        score[1] += 1
 
-
-def on_stand(window, final_value):
+def on_stand(window, final_value, score_label):
         computer_hand = set()
         computer(window, computer_hand, player_value=final_value)
+        score_label.config(text=f"Score:\nPlayer: {score[0]} - Computer: {score[1]}")
+        ask_new_round()
+
+def ask_new_round():
+    answer = messagebox.askyesno(title="Ask retry cancel",message="Do you want to continue?") 
+    if answer:
+        reset_game()
+    else:
+        exit()
+
+def reset_game():
+    global rounds, deck, round_label, score_label, window
+
+    for widget in window.winfo_children():
+        widget.destroy()
+
+    rounds += 1
+    deck = [(n, k) for n in number for k in kind]
+    shuffle(deck)
+
+    rounds_score = Frame(window)
+    rounds_score.place(relx=0.15, rely=0.05, anchor=CENTER)
+
+    round_label = Label(rounds_score, text=f"===== Round: {rounds} =====")
+    round_label.pack(side="top", anchor=CENTER)
+
+    score_label = Label(rounds_score, text=f"Score:\nPlayer: {score[0]} - Computer: {score[1]}")
+    score_label.pack(side="left", anchor=CENTER)
+
+    player_hand = set()
+    player(window, player_hand, lambda final_value: on_stand(window, final_value, score_label))
 
 def main():
-    global deck 
-
+    global window, deck, round_label, score_label
+    
     window = Tk()
     window.geometry("500x500")
     window.resizable(False, False)
@@ -137,9 +178,18 @@ def main():
     deck = [(n, k) for n in number for k in kind]
     shuffle(deck)
 
+    rounds_score = Frame(window)
+    rounds_score.place(relx=0.15,rely=0.05, anchor=CENTER)
+
+    round_label = Label(rounds_score, text=f"===== Round:{rounds} =====")
+    round_label.pack(side="top", anchor=CENTER)
+
+    score_label = Label(rounds_score, text=f"Score:\nPlayer: {score[0]} - Computer: {score[1]}")
+    score_label.pack(side="left", anchor=CENTER)
+
     player_hand = set()
-    player(window, player_hand, lambda final_value: on_stand(window, final_value))
-    
+    player(window, player_hand, lambda final_value: on_stand(window, final_value, score_label))
+
     window.mainloop()
 
 
